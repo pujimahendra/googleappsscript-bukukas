@@ -5,7 +5,7 @@
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu("🚀 Menu Admin")
+  ui.createMenu("Menu Admin")
     .addItem("Buka Input Iuran", "openIuranSidebar")
     .addToUi();
 }

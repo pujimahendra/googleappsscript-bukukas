@@ -94,5 +94,3 @@ Gunakan lisensi sesuai kebutuhan (MIT / GPL / dll)
 Dibuat untuk mempermudah manajemen kas berbasis spreadsheet dengan pendekatan sederhana namun efisien.
 
 ---
-
-# googleappsscript-bukukas

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    /* Custom Scrollbar kecil untuk sidebar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans p-3 text-sm">
+
+  <!-- Bagian 1: Input Iuran Ceklis -->
+  <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
+    <h2 class="font-bold text-blue-700 flex items-center gap-2 mb-3">
+      <i class="ph ph-check-square-offset text-lg"></i> Ceklis Iuran
+    </h2>
+
+    <!-- Dropdown Pilih Sheet / Tahun (DITAMBAHKAN DI SINI) -->
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-gray-600 mb-1">Tahun / Data Iuran:</label>
+      <select id="sheetSelector" onchange="loadAnggota()" class="w-full border border-blue-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-blue-50 text-blue-800 font-medium">
+        <option value="">Memuat data...</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-gray-600 mb-1">Nominal Iuran (Rp):</label>
+      <input type="number" id="nominal" value="5000" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+    </div>
+
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-gray-600 mb-1">Untuk Bulan:</label>
+      <select id="bulan" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-white">
+        <option value="Januari">Januari</option>
+        <option value="Februari">Februari</option>
+        <option value="Maret">Maret</option>
+        <option value="April" selected>April</option>
+        <option value="Mei">Mei</option>
+        <option value="Juni">Juni</option>
+        <option value="Juli">Juli</option>
+        <option value="Agustus">Agustus</option>
+        <option value="September">September</option>
+        <option value="Oktober">Oktober</option>
+        <option value="November">November</option>
+        <option value="Desember">Desember</option>
+      </select>
+    </div>
+
+    <div class="mb-2 flex justify-between items-end">
+      <label class="block text-xs font-semibold text-gray-600">Daftar Anggota:</label>
+      <button onclick="toggleSelectAll()" id="btnPilihSemua" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Pilih Semua</button>
+    </div>
+
+    <!-- Container Checklist Nama -->
+    <div id="listContainer" class="border border-gray-200 rounded-md bg-gray-50 h-48 overflow-y-auto p-2 mb-3">
+      <div id="loadingText" class="text-center text-gray-400 italic mt-4 text-xs animate-pulse">Memuat data...</div>
+      <div id="listNama"></div>
+    </div>
+
+    <button onclick="simpanIuran()" id="btnSimpan" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition shadow-sm flex items-center justify-center gap-2">
+      <i class="ph ph-floppy-disk"></i> Simpan
+    </button>
+    <p id="statusSimpan" class="mt-2 text-xs text-center font-medium h-4"></p>
+  </div>
+
+  <!-- Bagian 2: Tambah Anggota Baru -->
+  <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+    <h2 class="font-bold text-green-700 flex items-center gap-2 mb-3">
+      <i class="ph ph-user-plus text-lg"></i> Tambah Anggota Baru
+    </h2>
+    
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-gray-600 mb-1">Nama Anggota Lengkap:</label>
+      <input type="text" id="namaBaru" placeholder="Contoh: Budi Santoso" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+    </div>
+    
+    <button onclick="tambahAnggota()" id="btnTambah" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md transition shadow-sm flex items-center justify-center gap-2">
+      <i class="ph ph-plus-circle"></i> Tambah Anggota
+    </button>
+    <p id="statusTambah" class="mt-2 text-xs text-center font-medium h-4"></p>
+  </div>
+
+  <script>
+    let isAllSelected = false;
+
+    // Saat sidebar terbuka, ambil daftar sheet terlebih dahulu
+    window.onload = function() {
+      if(typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(populateSheets).getIuranSheets();
+      }
+    };
+
+    // Memasukkan daftar sheet ke dropdown
+    function populateSheets(sheets) {
+      const selector = document.getElementById('sheetSelector');
+      selector.innerHTML = sheets.map(s => `<option value="${s}">${s}</option>`).join('');
+      // Setelah sheet dimuat, otomatis ambil daftar anggota untuk sheet yang terpilih
+      loadAnggota();
+    }
+
+    // Memuat daftar anggota berdasarkan sheet yang dipilih
+    function loadAnggota() {
+      const sheetName = document.getElementById('sheetSelector').value;
+      
+      // UX Loading saat pindah sheet
+      document.getElementById('listNama').innerHTML = "";
+      document.getElementById('loadingText').style.display = 'block';
+      document.getElementById('loadingText').innerText = "Memuat daftar anggota...";
+      
+      // Reset status pilih semua
+      isAllSelected = false;
+      document.getElementById('btnPilihSemua').innerText = "Pilih Semua";
+      
+      if(typeof google !== 'undefined' && sheetName) {
+        google.script.run.withSuccessHandler(renderChecklist).getDaftarNama(sheetName);
+      }
+    }
+
+    // Merender (menampilkan) daftar checkbox nama
+    function renderChecklist(names) {
+      document.getElementById('loadingText').style.display = 'none';
+      const container = document.getElementById('listNama');
+      
+      if(names.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-500 text-center mt-2">Tidak ada data anggota.</p>`;
+        return;
+      }
+
+      container.innerHTML = names.map(nama => `
+        <label class="flex items-center gap-3 p-1.5 hover:bg-blue-50 rounded cursor-pointer transition border-b border-gray-100 last:border-0">
+          <input type="checkbox" name="anggota" value="${nama}" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+          <span class="text-sm text-gray-700 truncate">${nama}</span>
+        </label>
+      `).join('');
+    }
+
+    // Fitur Pilih Semua / Hapus Pilihan
+    function toggleSelectAll() {
+      const checkboxes = document.querySelectorAll('input[name="anggota"]');
+      const btn = document.getElementById('btnPilihSemua');
+      
+      isAllSelected = !isAllSelected;
+      checkboxes.forEach(cb => cb.checked = isAllSelected);
+      btn.innerText = isAllSelected ? "Hapus Pilihan" : "Pilih Semua";
+    }
+
+    // Fungsi menyimpan iuran masal
+    function simpanIuran() {
+      const btn = document.getElementById('btnSimpan');
+      const status = document.getElementById('statusSimpan');
+      const checkboxes = document.querySelectorAll('input[name="anggota"]:checked');
+      const nominal = document.getElementById('nominal').value;
+      const bulan = document.getElementById('bulan').value;
+      const sheetName = document.getElementById('sheetSelector').value; // Ambil nilai sheet
+      
+      const selectedNames = Array.from(checkboxes).map(cb => cb.value);
+
+      if(selectedNames.length === 0) {
+        status.innerText = "Pilih minimal 1 anggota!";
+        status.className = "mt-2 text-xs text-center font-medium h-4 text-red-500";
+        return;
+      }
+      if(!nominal || nominal <= 0) {
+        status.innerText = "Nominal harus diisi dengan benar!";
+        status.className = "mt-2 text-xs text-center font-medium h-4 text-red-500";
+        return;
+      }
+
+      // UX Loading
+      btn.disabled = true;
+      btn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> Menyimpan...`;
+      status.innerText = "";
+
+      google.script.run
+        .withSuccessHandler(function(msg) {
+          status.innerText = msg;
+          status.className = "mt-2 text-xs text-center font-medium h-4 text-green-600";
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph ph-floppy-disk"></i> Simpan`;
+          
+          // Reset ceklis setelah sukses
+          document.querySelectorAll('input[name="anggota"]').forEach(cb => cb.checked = false);
+          isAllSelected = false;
+          document.getElementById('btnPilihSemua').innerText = "Pilih Semua";
+
+          // Hilangkan pesan sukses setelah 3 detik
+          setTimeout(() => { status.innerText = ""; }, 3000);
+        })
+        .withFailureHandler(function(err) {
+          status.innerText = "Error: " + err.message;
+          status.className = "mt-2 text-xs text-center font-medium h-4 text-red-500";
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph ph-floppy-disk"></i> Simpan`;
+        })
+        .prosesIuran(selectedNames, bulan, nominal, sheetName); // Tambahkan parameter sheetName
+    }
+
+    // Fungsi menambahkan anggota baru ke baris bawah
+    function tambahAnggota() {
+      const inputField = document.getElementById('namaBaru');
+      const btn = document.getElementById('btnTambah');
+      const status = document.getElementById('statusTambah');
+      const namaBaru = inputField.value.trim();
+      const sheetName = document.getElementById('sheetSelector').value; // Ambil nilai sheet
+
+      if(namaBaru === "") {
+        status.innerText = "Nama tidak boleh kosong!";
+        status.className = "mt-2 text-xs text-center font-medium h-4 text-red-500";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> Menambahkan...`;
+      status.innerText = "";
+      
+      // Tampilkan indikator loading di daftar nama
+      document.getElementById('listNama').innerHTML = "";
+      document.getElementById('loadingText').style.display = 'block';
+
+      google.script.run
+        .withSuccessHandler(function(newNamesList) {
+          status.innerText = "Anggota berhasil ditambahkan!";
+          status.className = "mt-2 text-xs text-center font-medium h-4 text-green-600";
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph ph-plus-circle"></i> Tambah Anggota`;
+          inputField.value = ""; // Kosongkan input
+          
+          // Render ulang daftar checklist dengan nama baru
+          renderChecklist(newNamesList);
+          
+          setTimeout(() => { status.innerText = ""; }, 3000);
+        })
+        .withFailureHandler(function(err) {
+          status.innerText = "Error: " + err.message;
+          status.className = "mt-2 text-xs text-center font-medium h-4 text-red-500";
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph ph-plus-circle"></i> Tambah Anggota`;
+        })
+        .tambahAnggota(namaBaru, sheetName); // Tambahkan parameter sheetName
+    }
+  </script>
+</body>
+</html>

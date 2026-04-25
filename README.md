@@ -33,6 +33,7 @@ Halaman khusus untuk anggota melihat ringkasan keuangan:
 - Mengurangi input manual
 - Meminimalisir human error
 - Integrasi langsung dengan spreadsheet
+- Dibangun dengan bantuan framework Tailwind CSS & AI
 
 ---
 

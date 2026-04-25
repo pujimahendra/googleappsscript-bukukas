@@ -1,4 +1,4 @@
-# 💰 Sistem Manajemen Kas Berbasis Google Sheets + Apps Script
+# Sistem Manajemen Kas Berbasis Google Sheets + Apps Script
 
 Proyek ini merupakan sistem sederhana namun powerful untuk mengelola kas anggota menggunakan **Google Sheets** yang diperluas dengan **Google Apps Script**.
 
@@ -6,9 +6,9 @@ Dirancang untuk mempermudah pencatatan iuran, monitoring keuangan, dan transpara
 
 ---
 
-## 🚀 Fitur Utama
+## Fitur Utama
 
-### 📌 1. Sidebar Interaktif
+### 1. Sidebar Interaktif
 
 - Menambahkan anggota iuran dengan mudah
 - Checklist pembayaran kas per bulan (tanpa input manual)
@@ -89,7 +89,7 @@ Gunakan lisensi sesuai kebutuhan (MIT / GPL / dll)
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 Dibuat untuk mempermudah manajemen kas berbasis spreadsheet dengan pendekatan sederhana namun efisien.
 
